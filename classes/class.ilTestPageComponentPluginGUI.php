@@ -12,6 +12,7 @@ include_once("./Services/COPage/classes/class.ilPageComponentPluginGUI.php");
  * @author Fred Neumann <fred.neumann@gmx.de>
  *
  * @ilCtrl_isCalledBy ilTestPageComponentPluginGUI: ilPCPluggedGUI
+ * @ilCtrl_isCalledBy ilTestPageComponentPluginGUI: ilUIPluginRouterGUI
  */
 class ilTestPageComponentPluginGUI extends ilPageComponentPluginGUI
 {
@@ -49,7 +50,7 @@ class ilTestPageComponentPluginGUI extends ilPageComponentPluginGUI
 			default:
 				// perform valid commands
 				$cmd = $this->ctrl->getCmd();
-				if (in_array($cmd, array("create", "save", "edit", "update", "cancel")))
+				if (in_array($cmd, array("create", "save", "edit", "update", "cancel", "downloadFile")))
 				{
 					$this->$cmd();
 				}
@@ -73,16 +74,10 @@ class ilTestPageComponentPluginGUI extends ilPageComponentPluginGUI
 	public function create()
 	{
 		$form = $this->initForm(true);
-		if ($form->checkInput())
+		if ($this->saveForm($form, true));
 		{
-            $properties = array(
-                'page_value' => $form->getInput('page_value'),
-			);
-			if ($this->createElement($properties))
-			{
-				ilUtil::sendSuccess($this->lng->txt("msg_obj_modified"), true);
-				$this->returnToParent();
-			}
+			ilUtil::sendSuccess($this->lng->txt("msg_obj_modified"), true);
+			$this->returnToParent();
 		}
 		$form->setValuesByPost();
 		$this->tpl->setContent($form->getHtml());
@@ -103,17 +98,11 @@ class ilTestPageComponentPluginGUI extends ilPageComponentPluginGUI
 	 */
 	public function update()
 	{
-		$form = $this->initForm(true);
-		if ($form->checkInput())
+		$form = $this->initForm(false);
+		if ($this->saveForm($form, false));
 		{
-			$properties = array(
-				'page_value' => $form->getInput('page_value'),
-			);
-			if ($this->updateElement($properties))
-			{
-				ilUtil::sendSuccess($this->lng->txt("msg_obj_modified"), true);
-				$this->returnToParent();
-			}
+			ilUtil::sendSuccess($this->lng->txt("msg_obj_modified"), true);
+			$this->returnToParent();
 		}
 		$form->setValuesByPost();
 		$this->tpl->setContent($form->getHtml());
@@ -130,12 +119,17 @@ class ilTestPageComponentPluginGUI extends ilPageComponentPluginGUI
 		include_once("Services/Form/classes/class.ilPropertyFormGUI.php");
 		$form = new ilPropertyFormGUI();
 
-		// field name
+		// page value
         $page_value = new ilTextInputGUI('page_value', 'page_value');
 		$page_value->setMaxLength(40);
 		$page_value->setSize(40);
 		$page_value->setRequired(true);
 		$form->addItem($page_value);
+
+		// page image
+		$page_file = new ilFileInputGUI('page_file', 'page_file');
+		$page_file->setALlowDeletion(true);
+		$form->addItem($page_file);
 
 		// page info values
 		foreach ($this->getPageInfo() as $key => $value)
@@ -167,6 +161,59 @@ class ilTestPageComponentPluginGUI extends ilPageComponentPluginGUI
 	}
 
 
+	protected function saveForm($form, $a_create)
+	{
+		if ($form->checkInput())
+		{
+			$properties = $this->getProperties();
+
+			$properties['page_value'] = $form->getInput('page_value');
+
+			if (!empty($_FILES["page_file"]["name"]))
+			{
+				$old_file_id = empty($properties['page_file']) ? null : $properties['page_file'];
+
+				include_once("./Modules/File/classes/class.ilObjFile.php");
+				$fileObj = new ilObjFile($old_file_id, false);
+				$fileObj->setType("file");
+				$fileObj->setTitle($_FILES["page_file"]["name"]);
+				$fileObj->setDescription("");
+				$fileObj->setFileName($_FILES["page_file"]["name"]);
+				$fileObj->setFileType($_FILES["page_file"]["type"]);
+				$fileObj->setFileSize($_FILES["page_file"]["size"]);
+				$fileObj->setMode("filelist");
+				if (empty($old_file_id))
+				{
+					$fileObj->create();
+				}
+				else
+				{
+					$fileObj->update();
+				}
+				$fileObj->raiseUploadError(false);
+				// upload file to filesystem
+				$fileObj->createDirectory();
+				$fileObj->getUploadFile($_FILES["page_file"]["tmp_name"],
+					$_FILES["page_file"]["name"]);
+
+
+					$properties['page_file'] = $fileObj->getId();
+			}
+
+			if ($a_create)
+			{
+				return $this->createElement($properties);
+			}
+			else
+			{
+				return $this->updateElement($properties);
+			}
+		}
+
+		return false;
+	}
+
+
 	/**
 	 * Cancel
 	 */
@@ -186,7 +233,44 @@ class ilTestPageComponentPluginGUI extends ilPageComponentPluginGUI
 	{
 		$display = array_merge($a_properties, $this->getPageInfo());
 
-		return '<pre>' . print_r($display, true) . '</pre>';
+		$html =  '<pre>' . print_r($display, true) ;
+
+		if (!empty($a_properties['page_file']))
+		{
+			include_once("./Modules/File/classes/class.ilObjFile.php");
+			$fileObj = new ilObjFile($a_properties['page_file'], false);
+
+			// security
+			$_SESSION[__CLASS__	]['allowedFiles'][$fileObj->getId()] = true;
+
+			$this->ctrl->setParameter($this, 'id', $fileObj->getId());
+			$url = $this->ctrl->getLinkTargetByClass(array('ilUIPluginRouterGUI', 'ilTestPageComponentPluginGUI'), 'downloadFile');
+
+			$html .= 'File: <a href="'.$url.'">'.$fileObj->getPresentationTitle().'</a>';
+		}
+
+		$html .= '</pre>';
+
+		return $html;
+	}
+
+
+	/**
+	 * download file of file lists
+	 */
+	function downloadFile()
+	{
+		$file_id = (int) $_GET['id'];
+		if ($_SESSION[__CLASS__	]['allowedFiles'][$file_id])
+		{
+			require_once("./Modules/File/classes/class.ilObjFile.php");
+			$fileObj = new ilObjFile($file_id, false);
+			$fileObj->sendFile();
+		}
+		else
+		{
+			echo 'not allowed';
+		}
 	}
 
 
