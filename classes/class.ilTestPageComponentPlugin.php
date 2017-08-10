@@ -54,7 +54,7 @@ class ilTestPageComponentPlugin extends ilPageComponentPlugin
 				$this->rCopy($fileObj->getDirectory(), $newObj->getDirectory());
 				$a_properties['page_file'] = $newObj->getId();
 
-				ilUtil::sendSuccess("File Object $file_id cloned.", true);
+				ilUtil::sendInfo("File Object $file_id cloned.", true);
 			}
 			catch (Exception $e)
 			{
@@ -78,6 +78,8 @@ class ilTestPageComponentPlugin extends ilPageComponentPlugin
 				include_once("./Modules/File/classes/class.ilObjFile.php");
 				$fileObj = new ilObjFile($file_id, false);
 				$fileObj->delete();
+
+				ilUtil::sendInfo("File Object $file_id deleted.", true);
 			}
 			catch (Exception $e)
 			{
