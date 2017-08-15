@@ -61,6 +61,13 @@ class ilTestPageComponentPlugin extends ilPageComponentPlugin
 				ilUtil::sendFailure($e->getMessage(), true);
 			}
 		}
+
+		if ($additional_data_id = $a_properties['additional_data_id'])
+		{
+			$data = $this->getData($additional_data_id);
+			$id = $this->saveData($data);
+			$a_properties['additional_data_id'] = $id;
+		}
 	}
 
 
@@ -85,6 +92,11 @@ class ilTestPageComponentPlugin extends ilPageComponentPlugin
 			{
 				ilUtil::sendFailure($e->getMessage(), true);
 			}
+		}
+
+		if ($additional_data_id = $a_properties['additional_data_id'])
+		{
+			$this->deleteData($additional_data_id);
 		}
 	}
 
@@ -113,6 +125,75 @@ class ilTestPageComponentPlugin extends ilPageComponentPlugin
 			}
 		}
 		closedir($dir);
+	}
+
+	/**
+	 * Get additional data by id
+	 * @param $id
+	 */
+	public function getData($id)
+	{
+		global $DIC;
+		$db = $DIC->database();
+
+		$query = "SELECT data FROM pctcp_data WHERE id = " .$db->quote($id, 'integer');
+		$result = $db->query($query);
+		if ($row = $db->fetchAssoc($result))
+		{
+			return $row['data'];
+		}
+		return null;
+	}
+
+	/**
+	 * Save new additional data
+	 * @param $data
+	 * @return integer	id of saved data
+	 */
+	public function saveData($data)
+	{
+		global $DIC;
+		$db = $DIC->database();
+
+		$id = $db->nextId('pctcp_data');
+		$db->insert('pctcp_data',
+			array(
+				'id' => array('integer', $id),
+				'data' => array('text', $data))
+		);
+		return $id;
+	}
+
+	/**
+	 * Update additional data
+	 * @param integer 	$id
+	 * @param string	$data
+	 * @return mixed
+	 */
+	public function updateData($id, $data)
+	{
+		global $DIC;
+		$db = $DIC->database();
+
+		$db->update('pctcp_data',
+			array(
+				'data' => array('text', $data)),
+			array(
+				'id' => array('integer', $id))
+		);
+	}
+
+	/**
+	 * Delete additional data
+	 * @param $id
+	 */
+	public function deleteData($id)
+	{
+		global $DIC;
+		$db = $DIC->database();
+
+		$query = "DELETE FROM pctcp_data WHERE ID = " .$db->quote($id, 'integer');
+		$db->manipulate($query);
 	}
 }
 

@@ -126,10 +126,16 @@ class ilTestPageComponentPluginGUI extends ilPageComponentPluginGUI
 		$page_value->setRequired(true);
 		$form->addItem($page_value);
 
-		// page image
+		// page file
 		$page_file = new ilFileInputGUI('page_file', 'page_file');
 		$page_file->setALlowDeletion(true);
 		$form->addItem($page_file);
+
+		// additional data
+		$data = new ilTextInputGUI('additional_data', 'additional_data');
+		$data->setMaxLength(40);
+		$data->setSize(40);
+		$form->addItem($data);
 
 		// page info values
 		foreach ($this->getPageInfo() as $key => $value)
@@ -150,6 +156,7 @@ class ilTestPageComponentPluginGUI extends ilPageComponentPluginGUI
 		{
 			$prop = $this->getProperties();
 			$page_value->setValue($prop['page_value']);
+			$data->setValue($this->plugin->getData($prop['additional_data_id']));
 
 			$form->addCommandButton("update", $this->lng->txt("save"));
 			$form->addCommandButton("cancel", $this->lng->txt("cancel"));
@@ -167,8 +174,10 @@ class ilTestPageComponentPluginGUI extends ilPageComponentPluginGUI
 		{
 			$properties = $this->getProperties();
 
+			// value saved in the page
 			$properties['page_value'] = $form->getInput('page_value');
 
+			// file object
 			if (!empty($_FILES["page_file"]["name"]))
 			{
 				$old_file_id = empty($properties['page_file']) ? null : $properties['page_file'];
@@ -199,6 +208,19 @@ class ilTestPageComponentPluginGUI extends ilPageComponentPluginGUI
 
 					$properties['page_file'] = $fileObj->getId();
 			}
+
+			// additional data
+			$id = $properties['additional_data_id'];
+			if (empty($id))
+			{
+				$id = $this->plugin->saveData($form->getInput('additional_data'));
+				$properties['additional_data_id'] = $id;
+			}
+			else
+			{
+				$this->plugin->updateData($id, $form->getInput('additional_data'));
+			}
+
 
 			if ($a_create)
 			{
@@ -246,6 +268,8 @@ class ilTestPageComponentPluginGUI extends ilPageComponentPluginGUI
 			$this->ctrl->setParameter($this, 'id', $fileObj->getId());
 			$url = $this->ctrl->getLinkTargetByClass(array('ilUIPluginRouterGUI', 'ilTestPageComponentPluginGUI'), 'downloadFile');
 
+			$data = $this->plugin->getData($a_properties['additional_data_id']);
+			$html .= 'Data: ' . $data . "\n";
 			$html .= 'File: <a href="'.$url.'">'.$fileObj->getPresentationTitle().'</a>';
 		}
 

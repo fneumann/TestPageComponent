@@ -39,6 +39,7 @@ class ilTestPageComponentExporter extends ilPageComponentPluginExporter
 			}
 		}
 
+		// add the files as dependencies
 		if (!empty(($file_ids)))
 		{
 			return array(
@@ -63,7 +64,12 @@ class ilTestPageComponentExporter extends ilPageComponentPluginExporter
 	 */
 	public function getXmlRepresentation($a_entity, $a_schema_version, $a_id)
 	{
-		return '';
+		/** @var ilTestPageComponentPlugin $plugin */
+		$plugin = ilPluginAdmin::getPluginObject(IL_COMP_SERVICE, 'COPage', 'pgcp', 'TestPageComponent');
+
+		$properties = self::getPCProperties($a_id);
+		$data = $plugin->getData($properties['additional_data_id']);
+		return '<data>'. htmlentities($data) . '</data>';
 	}
 
 	/**
