@@ -259,18 +259,28 @@ class ilTestPageComponentPluginGUI extends ilPageComponentPluginGUI
 
 		if (!empty($a_properties['page_file']))
 		{
-			include_once("./Modules/File/classes/class.ilObjFile.php");
-			$fileObj = new ilObjFile($a_properties['page_file'], false);
+			try
+			{
+				include_once("./Modules/File/classes/class.ilObjFile.php");
+				$fileObj = new ilObjFile($a_properties['page_file'], false);
 
-			// security
-			$_SESSION[__CLASS__	]['allowedFiles'][$fileObj->getId()] = true;
+				// security
+				$_SESSION[__CLASS__	]['allowedFiles'][$fileObj->getId()] = true;
 
-			$this->ctrl->setParameter($this, 'id', $fileObj->getId());
-			$url = $this->ctrl->getLinkTargetByClass(array('ilUIPluginRouterGUI', 'ilTestPageComponentPluginGUI'), 'downloadFile');
+				$this->ctrl->setParameter($this, 'id', $fileObj->getId());
+				$url = $this->ctrl->getLinkTargetByClass(array('ilUIPluginRouterGUI', 'ilTestPageComponentPluginGUI'), 'downloadFile');
+				$title = $fileObj->getPresentationTitle();
+
+			}
+			catch (Exception $e)
+			{
+				$url = "";
+				$title = $e->getMessage();
+			}
 
 			$data = $this->plugin->getData($a_properties['additional_data_id']);
 			$html .= 'Data: ' . $data . "\n";
-			$html .= 'File: <a href="'.$url.'">'.$fileObj->getPresentationTitle().'</a>';
+			$html .= 'File: <a href="'.$url.'">'.$title.'</a>';
 		}
 
 		$html .= '</pre>';

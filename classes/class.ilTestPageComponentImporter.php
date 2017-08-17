@@ -12,7 +12,7 @@ include_once("./Services/COPage/classes/class.ilPageComponentPluginImporter.php"
  *
  * @ingroup ServicesCOPage
  */
-class ilTestPageComponentExporter extends ilPageComponentPluginImporter
+class ilTestPageComponentImporter extends ilPageComponentPluginImporter
 {
 	public function init()
 	{
@@ -32,12 +32,26 @@ class ilTestPageComponentExporter extends ilPageComponentPluginImporter
 		/** @var ilTestPageComponentPlugin $plugin */
 		$plugin = ilPluginAdmin::getPluginObject(IL_COMP_SERVICE, 'COPage', 'pgcp', 'TestPageComponent');
 
-		$properties = self::getPCProperties($a_id);
-		$version = self::getPCVersion($a_id);
-
-		// todo: analyze properties
-
 		$new_id = self::getPCMapping($a_id, $a_mapping);
+
+		$properties = self::getPCProperties($new_id);
+		$version = self::getPCVersion($new_id);
+
+		// write the mapped file id to the properties
+		if ($old_file_id = $properties['page_file'])
+		{
+			$new_file_id = $a_mapping->getMapping("Modules/File", 'file', $old_file_id);
+			$properties['page_file'] = $new_file_id;
+		}
+
+		// save the data from the imported xml and write its id to the properties
+		if ($additional_data_id = $properties['additional_data_id'])
+		{
+			$data = html_entity_decode(substr($a_xml, 6, -7));
+			$id = $plugin->saveData($data);
+			$properties['additional_data_id'] = $id;
+		}
+
 		self::setPCProperties($new_id, $properties);
 		self::setPCVersion($new_id, $version);
 	}

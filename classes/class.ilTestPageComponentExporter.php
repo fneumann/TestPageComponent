@@ -113,5 +113,4 @@ class ilTestPageComponentExporter extends ilPageComponentPluginExporter
 			)
 		);
 	}
-
 }
