@@ -34,6 +34,18 @@ class ilTestPageComponentPlugin extends ilPageComponentPlugin
 		return true;
 	}
 
+
+	/**
+	 * Handle an event
+	 * @param string	$a_component
+	 * @param string	$a_event
+	 * @param mixed		$a_parameter
+	 */
+	public function handleEvent($a_component, $a_event, $a_parameter)
+	{
+		$_SESSION['pctpc_listened_event'] = array('time' => time(), 'event' => $a_event);
+	}
+
 	/**
 	 * This function is called when the page content is cloned
 	 * @param array 	$a_properties		properties saved in the page, (should be modified if neccessary)

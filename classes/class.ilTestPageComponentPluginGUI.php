@@ -281,6 +281,13 @@ class ilTestPageComponentPluginGUI extends ilPageComponentPluginGUI
 			$data = $this->plugin->getData($a_properties['additional_data_id']);
 			$html .= 'Data: ' . $data . "\n";
 			$html .= 'File: <a href="'.$url.'">'.$title.'</a>';
+
+			if ($event = $_SESSION['pctpc_listened_event'])
+			{
+				$html .= "\n";
+				$html .= 'Last Auth Event: '. ilDatePresentation::formatDate(new ilDateTime($event['time'], IL_CAL_UNIX));
+				$html .= ' ' . $event['event'];
+			}
 		}
 
 		$html .= '</pre>';
