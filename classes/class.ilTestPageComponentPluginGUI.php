@@ -255,8 +255,17 @@ class ilTestPageComponentPluginGUI extends ilPageComponentPluginGUI
 	{
 		$display = array_merge($a_properties, $this->getPageInfo());
 
+		// show properties stores in the page
 		$html =  '<pre>' . print_r($display, true) ;
 
+		// show additional data
+		if (!empty($a_properties['additional_data_id']))
+		{
+			$data = $this->plugin->getData($a_properties['additional_data_id']);
+			$html .= 'Data: ' . $data . "\n";
+		}
+
+		// show uploaded file
 		if (!empty($a_properties['page_file']))
 		{
 			try
@@ -278,16 +287,15 @@ class ilTestPageComponentPluginGUI extends ilPageComponentPluginGUI
 				$title = $e->getMessage();
 			}
 
-			$data = $this->plugin->getData($a_properties['additional_data_id']);
-			$html .= 'Data: ' . $data . "\n";
-			$html .= 'File: <a href="'.$url.'">'.$title.'</a>';
+			$html .= 'File: <a href="'.$url.'">'.$title.'</a>'. "\n";
+		}
 
-			if ($event = $_SESSION['pctpc_listened_event'])
-			{
-				$html .= "\n";
-				$html .= 'Last Auth Event: '. ilDatePresentation::formatDate(new ilDateTime($event['time'], IL_CAL_UNIX));
-				$html .= ' ' . $event['event'];
-			}
+		// Show listened event
+		if ($event = $_SESSION['pctpc_listened_event'])
+		{
+			$html .= "\n";
+			$html .= 'Last Auth Event: '. ilDatePresentation::formatDate(new ilDateTime($event['time'], IL_CAL_UNIX));
+			$html .= ' ' . $event['event'];
 		}
 
 		$html .= '</pre>';
