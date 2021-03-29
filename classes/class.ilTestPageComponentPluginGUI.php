@@ -183,7 +183,7 @@ class ilTestPageComponentPluginGUI extends ilPageComponentPluginGUI
 				$old_file_id = empty($properties['page_file']) ? null : $properties['page_file'];
 
 				include_once("./Modules/File/classes/class.ilObjFile.php");
-				$fileObj = new ilObjFile($old_file_id, false);
+				$fileObj = new ilObjFile((int) $old_file_id, false);
 				$fileObj->setType("file");
 				$fileObj->setTitle($_FILES["page_file"]["name"]);
 				$fileObj->setDescription("");
